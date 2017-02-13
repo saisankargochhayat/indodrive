@@ -1,0 +1,84 @@
+<html><head>
+<title>smartcab/agent.py</title>
+<meta name="Generator" content="htmlizer/[twisted, version 16.4.0]" />
+<link rel="alternate" href="smartcab/agent.py" type="text/x-python" />
+
+</head>
+<body>
+<pre><span class="py-src-keyword">import</span> <span class="py-src-variable">random</span>
+<span class="py-src-keyword">from</span> <span class="py-src-variable">environment</span> <span class="py-src-keyword">import</span> <span class="py-src-variable">Agent</span>, <span class="py-src-variable">Environment</span>
+<span class="py-src-keyword">from</span> <span class="py-src-variable">planner</span> <span class="py-src-keyword">import</span> <span class="py-src-variable">RoutePlanner</span>
+<span class="py-src-keyword">from</span> <span class="py-src-variable">simulator</span> <span class="py-src-keyword">import</span> <span class="py-src-variable">Simulator</span>
+
+<span class="py-src-keyword">class</span> <span class="py-src-identifier">LearningAgent</span>(<span class="py-src-parameter">Agent</span>):
+    <span class="py-src-string">"""An agent that learns to drive in the smartcab world."""</span>
+
+    <span class="py-src-keyword">def</span> <span class="py-src-identifier">__init__</span>(<span class="py-src-parameter">self</span>, <span class="py-src-parameter">env</span>):
+        <span class="py-src-variable">super</span>(<span class="py-src-variable">LearningAgent</span>, <span class="py-src-variable">self</span>).<span class="py-src-variable">__init__</span>(<span class="py-src-variable">env</span>)  <span class="py-src-comment"># sets self.env = env, state = None, next_waypoint = None, and a default color</span>
+        <span class="py-src-variable">self</span>.<span class="py-src-variable">color</span> = <span class="py-src-string">'red'</span>  <span class="py-src-comment"># override color</span>
+        <span class="py-src-variable">self</span>.<span class="py-src-variable">planner</span> = <span class="py-src-variable">RoutePlanner</span>(<span class="py-src-variable">self</span>.<span class="py-src-variable">env</span>, <span class="py-src-variable">self</span>)  <span class="py-src-comment"># simple route planner to get next_waypoint</span>
+        <span class="py-src-comment"># TODO: Initialize any additional variables here</span>
+        <span class="py-src-variable">self</span>.<span class="py-src-variable">reward</span> = <span class="py-src-number">0</span>
+        <span class="py-src-variable">self</span>.<span class="py-src-variable">next_waypoint</span> = <span class="py-src-variable">None</span>
+
+    <span class="py-src-keyword">def</span> <span class="py-src-identifier">reset</span>(<span class="py-src-parameter">self</span>, <span class="py-src-parameter">destination</span>=<span class="py-src-parameter">None</span>):
+        <span class="py-src-variable">self</span>.<span class="py-src-variable">planner</span>.<span class="py-src-variable">route_to</span>(<span class="py-src-variable">destination</span>)
+        <span class="py-src-comment"># TODO: Prepare for a new trip; reset any variables here, if required</span>
+        <span class="py-src-variable">self</span>.<span class="py-src-variable">state</span> = <span class="py-src-variable">None</span>
+        <span class="py-src-variable">self</span>.<span class="py-src-variable">next_waypoint</span> = <span class="py-src-variable">None</span>
+
+    <span class="py-src-keyword">def</span> <span class="py-src-identifier">update</span>(<span class="py-src-parameter">self</span>, <span class="py-src-parameter">t</span>):
+        <span class="py-src-comment"># Gather inputs</span>
+        <span class="py-src-variable">self</span>.<span class="py-src-variable">next_waypoint</span> = <span class="py-src-variable">self</span>.<span class="py-src-variable">planner</span>.<span class="py-src-variable">next_waypoint</span>()  <span class="py-src-comment"># from route planner, also displayed by simulator</span>
+        <span class="py-src-variable">inputs</span> = <span class="py-src-variable">self</span>.<span class="py-src-variable">env</span>.<span class="py-src-variable">sense</span>(<span class="py-src-variable">self</span>)
+        <span class="py-src-variable">deadline</span> = <span class="py-src-variable">self</span>.<span class="py-src-variable">env</span>.<span class="py-src-variable">get_deadline</span>(<span class="py-src-variable">self</span>)
+
+        <span class="py-src-comment"># TODO: Select action according to your policy</span>
+        <span class="py-src-variable">action</span> = <span class="py-src-variable">random</span>.<span class="py-src-variable">choice</span>(<span class="py-src-variable">Environment</span>.<span class="py-src-variable">valid_actions</span>)
+        
+        <span class="py-src-comment"># TODO: Update state</span>
+        <span class="py-src-variable">action_okay</span> = <span class="py-src-variable">True</span>
+        <span class="py-src-keyword">if</span> <span class="py-src-variable">self</span>.<span class="py-src-variable">next_waypoint</span> == <span class="py-src-string">'right'</span>:
+            <span class="py-src-keyword">if</span> <span class="py-src-variable">inputs</span>[<span class="py-src-string">'light'</span>] == <span class="py-src-string">'red'</span> <span class="py-src-keyword">and</span> <span class="py-src-variable">inputs</span>[<span class="py-src-string">'left'</span>] == <span class="py-src-string">'forward'</span>:
+                <span class="py-src-variable">action_okay</span> = <span class="py-src-variable">False</span>
+
+        <span class="py-src-keyword">elif</span> <span class="py-src-variable">self</span>.<span class="py-src-variable">next_waypoint</span> == <span class="py-src-string">'straight'</span>:
+            <span class="py-src-keyword">if</span> <span class="py-src-variable">inputs</span>[<span class="py-src-string">'light'</span>] == <span class="py-src-string">'red'</span>:
+                <span class="py-src-variable">action_okay</span> = <span class="py-src-variable">False</span>
+
+        <span class="py-src-keyword">elif</span> <span class="py-src-variable">self</span>.<span class="py-src-variable">next_waypoint</span> == <span class="py-src-string">'left'</span>:
+            <span class="py-src-keyword">if</span> <span class="py-src-variable">inputs</span>[<span class="py-src-string">'light'</span>] == <span class="py-src-string">'red'</span> <span class="py-src-keyword">or</span> <span class="py-src-variable">inputs</span>[<span class="py-src-string">'oncoming'</span>] == <span class="py-src-string">'forward'</span> <span class="py-src-keyword">or</span> <span class="py-src-variable">inputs</span>[<span class="py-src-string">'oncoming'</span>] == <span class="py-src-string">'right'</span>:
+                <span class="py-src-variable">action_okay</span> = <span class="py-src-variable">False</span>
+
+        <span class="py-src-keyword">if</span> <span class="py-src-variable">action_okay</span> == <span class="py-src-variable">False</span>:
+            <span class="py-src-variable">action</span> = <span class="py-src-variable">None</span>
+
+        <span class="py-src-variable">self</span>.<span class="py-src-variable">state</span> = <span class="py-src-variable">inputs</span>
+        <span class="py-src-variable">self</span>.<span class="py-src-variable">state</span>[<span class="py-src-string">'next_waypoint'</span>] = <span class="py-src-variable">self</span>.<span class="py-src-variable">next_waypoint</span>
+        <span class="py-src-variable">self</span>.<span class="py-src-variable">state</span> = <span class="py-src-variable">tuple</span>(<span class="py-src-variable">sorted</span>(<span class="py-src-variable">self</span>.<span class="py-src-variable">state</span>.<span class="py-src-variable">items</span>()))
+        <span class="py-src-comment"># Execute action and get reward</span>
+        <span class="py-src-variable">reward</span> = <span class="py-src-variable">self</span>.<span class="py-src-variable">env</span>.<span class="py-src-variable">act</span>(<span class="py-src-variable">self</span>, <span class="py-src-variable">action</span>)
+        <span class="py-src-variable">self</span>.<span class="py-src-variable">reward</span> = <span class="py-src-variable">self</span>.<span class="py-src-variable">reward</span> + <span class="py-src-variable">reward</span>
+
+        <span class="py-src-comment"># TODO: Learn policy based on state, action, reward</span>
+
+        <span class="py-src-comment">#print "LearningAgent.update(): deadline = {}, inputs = {}, action = {}, reward = {}".format(deadline, inputs, action, reward)  # [debug]</span>
+
+
+<span class="py-src-keyword">def</span> <span class="py-src-identifier">run</span>():
+    <span class="py-src-string">"""Run the agent for a finite number of trials."""</span>
+
+    <span class="py-src-comment"># Set up environment and agent</span>
+    <span class="py-src-variable">e</span> = <span class="py-src-variable">Environment</span>()  <span class="py-src-comment"># create environment (also adds some dummy traffic)</span>
+    <span class="py-src-variable">a</span> = <span class="py-src-variable">e</span>.<span class="py-src-variable">create_agent</span>(<span class="py-src-variable">LearningAgent</span>)  <span class="py-src-comment"># create agent</span>
+    <span class="py-src-variable">e</span>.<span class="py-src-variable">set_primary_agent</span>(<span class="py-src-variable">a</span>, <span class="py-src-variable">enforce_deadline</span>=<span class="py-src-variable">True</span>)  <span class="py-src-comment"># set agent to track</span>
+
+    <span class="py-src-comment"># Now simulate it</span>
+    <span class="py-src-variable">sim</span> = <span class="py-src-variable">Simulator</span>(<span class="py-src-variable">e</span>, <span class="py-src-variable">update_delay</span>=<span class="py-src-number">0.01</span>)  <span class="py-src-comment"># reduce update_delay to speed up simulation</span>
+    <span class="py-src-variable">sim</span>.<span class="py-src-variable">run</span>(<span class="py-src-variable">n_trials</span>=<span class="py-src-number">100</span>)  <span class="py-src-comment"># press Esc or close pygame window to quit</span>
+
+
+<span class="py-src-keyword">if</span> <span class="py-src-variable">__name__</span> == <span class="py-src-string">'__main__'</span>:
+    <span class="py-src-variable">run</span>()
+</pre>
+</body>
